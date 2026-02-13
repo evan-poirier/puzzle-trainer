@@ -8,15 +8,15 @@ generator client {
 }
 
 model Puzzle {
-  id Int @id @default(autoincrement())
-  PuzzleId String @unique
-  FEN String
-  Moves String
-  Rating String
-  RatingDeviation String
-  Popularity String
-  NbPlays String
-  Themes String
-  GameUrl String
-  OpeningTags String
+  id              Int    @id @default(autoincrement())
+  puzzleId        String @unique
+  fen             String
+  moves           String
+  rating          Int
+  ratingDeviation Int
+  popularity      Int
+  nbPlays         Int
+  themes          String
+  gameUrl         String
+  openingTags     String
 }
