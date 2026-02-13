@@ -1,0 +1,22 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Puzzle {
+  id Int @id @default(autoincrement())
+  PuzzleId String @unique
+  FEN String
+  Moves String
+  Rating String
+  RatingDeviation String
+  Popularity String
+  NbPlays String
+  Themes String
+  GameUrl String
+  OpeningTags String
+}

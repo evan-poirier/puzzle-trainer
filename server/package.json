@@ -1,0 +1,21 @@
+{
+  "name": "puzzle-trainer-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "@prisma/client": "^6.5.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.5.0",
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.3",
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.13.4"
+  }
+}
