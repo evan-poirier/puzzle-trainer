@@ -14,7 +14,11 @@ interface Puzzle {
 
 type PuzzleStatus = "loading" | "playing" | "correct" | "wrong";
 
-export default function PuzzleBoard() {
+interface PuzzleBoardProps {
+  onAuthError: () => void;
+}
+
+export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
   const [game, setGame] = useState(new Chess());
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
@@ -25,6 +29,10 @@ export default function PuzzleBoard() {
   const loadPuzzle = useCallback(async () => {
     setStatus("loading");
     const res = await fetch("/api/puzzle/random");
+    if (res.status === 401) {
+      onAuthError();
+      return;
+    }
     const data: Puzzle = await res.json();
     setPuzzle(data);
 
@@ -44,7 +52,7 @@ export default function PuzzleBoard() {
     setGame(chess);
     setMoveIndex(1);
     setStatus("playing");
-  }, []);
+  }, [onAuthError]);
 
   useEffect(() => {
     loadPuzzle();
