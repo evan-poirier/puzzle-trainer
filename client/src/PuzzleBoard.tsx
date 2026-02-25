@@ -20,7 +20,7 @@ export default function PuzzleBoard() {
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
   const [moveIndex, setMoveIndex] = useState(0);
   const [status, setStatus] = useState<PuzzleStatus>("loading");
-  const [boardOrientation, setBoardOrientation] = useState<"white" | "black">("white");
+  const boardOrientation = game.turn() === "w" ? "white" : "black";
 
   const loadPuzzle = useCallback(async () => {
     setStatus("loading");
@@ -32,10 +32,6 @@ export default function PuzzleBoard() {
     setSolutionMoves(moves);
 
     const chess = new Chess(data.fen);
-
-    // Player's color is whoever moves AFTER the setup move
-    const setupColor = chess.turn();
-    setBoardOrientation(setupColor === "w" ? "black" : "white");
 
     // Play the opponent's setup move
     const setupMove = moves[0];
