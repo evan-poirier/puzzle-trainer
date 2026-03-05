@@ -27,7 +27,7 @@ function App() {
   if (!user) {
     return (
       <div className="app">
-        <h1>Puzzle Trainer</h1>
+        <h1>Tactic Monster</h1>
         <GoogleSignIn onAuth={loginWithGoogle} />
       </div>
     )
