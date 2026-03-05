@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 
-interface User {
+export interface User {
   id: number;
   name: string;
   email: string;
   picture?: string;
+  rating: number;
 }
 
 export function useAuth() {
@@ -39,5 +40,5 @@ export function useAuth() {
 
   const clearUser = useCallback(() => setUser(null), []);
 
-  return { user, loading, loginWithGoogle, logout, clearUser };
+  return { user, setUser, loading, loginWithGoogle, logout, clearUser };
 }

@@ -5,6 +5,11 @@ import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library";
 import path from "path";
 
+function calculateNewElo(playerRating: number, puzzleRating: number, solved: boolean, K = 32): number {
+  const expected = 1 / (1 + Math.pow(10, (puzzleRating - playerRating) / 400));
+  return Math.round(playerRating + K * ((solved ? 1 : 0) - expected));
+}
+
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -84,7 +89,7 @@ app.post("/api/auth/google", async (req: Request, res: Response) => {
     });
 
     req.session.userId = user.id;
-    res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture });
+    res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture, rating: user.rating });
   } catch {
     res.status(401).json({ error: "Token verification failed" });
   }
@@ -102,7 +107,7 @@ app.get("/api/me", (req: Request, res: Response) => {
         res.status(401).json({ error: "Not authenticated" });
         return;
       }
-      res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture });
+      res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture, rating: user.rating });
     });
 });
 
@@ -149,20 +154,37 @@ app.post("/api/puzzle/attempt", requireAuth, async (req: Request, res: Response)
     return;
   }
 
-  const attempt = await prisma.puzzleAttempt.create({
-    data: {
-      userId: req.session.userId!,
-      puzzleId: puzzle.id,
-      correct,
-    },
-  });
+  const user = await prisma.user.findUnique({ where: { id: req.session.userId! } });
+  if (!user) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
 
-  res.json(attempt);
+  const newRating = calculateNewElo(user.rating, puzzle.rating, correct);
+  const ratingChange = newRating - user.rating;
+
+  const [attempt] = await prisma.$transaction([
+    prisma.puzzleAttempt.create({
+      data: {
+        userId: user.id,
+        puzzleId: puzzle.id,
+        correct,
+        userRating: user.rating,
+      },
+    }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: { rating: newRating },
+    }),
+  ]);
+
+  res.json({ ...attempt, newRating, ratingChange });
 });
 
 app.get("/api/stats", requireAuth, async (req: Request, res: Response) => {
   const userId = req.session.userId!;
 
+  const user = await prisma.user.findUnique({ where: { id: userId } });
   const total = await prisma.puzzleAttempt.count({ where: { userId } });
   const correct = await prisma.puzzleAttempt.count({ where: { userId, correct: true } });
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -176,7 +198,7 @@ app.get("/api/stats", requireAuth, async (req: Request, res: Response) => {
     },
   });
 
-  res.json({ total, correct, accuracy, recent });
+  res.json({ total, correct, accuracy, recent, rating: user?.rating ?? 1500 });
 });
 
 // Serve client build in production

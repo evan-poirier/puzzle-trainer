@@ -14,6 +14,7 @@ interface Stats {
   total: number;
   correct: number;
   accuracy: number;
+  rating: number;
   recent: Attempt[];
 }
 
@@ -54,6 +55,10 @@ export default function StatsPage({ onAuthError }: StatsPageProps) {
         <div className="stat-card">
           <span className="stat-value">{stats.accuracy}%</span>
           <span className="stat-label">Accuracy</span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-value">{stats.rating}</span>
+          <span className="stat-label">Elo Rating</span>
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import PuzzleBoard from './PuzzleBoard'
 import StatsPage from './StatsPage'
 import GoogleSignIn from './GoogleSignIn'
@@ -8,8 +8,12 @@ import './App.css'
 type Tab = "play" | "stats"
 
 function App() {
-  const { user, loading, loginWithGoogle, logout, clearUser } = useAuth()
+  const { user, setUser, loading, loginWithGoogle, logout, clearUser } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>("play")
+
+  const handleRatingUpdate = useCallback((newRating: number) => {
+    setUser(prev => prev ? { ...prev, rating: newRating } : prev);
+  }, [setUser]);
 
   if (loading) {
     return (
@@ -32,7 +36,7 @@ function App() {
   return (
     <div className="app">
       <div className="user-bar">
-        <span>Logged in as <strong>{user.name}</strong></span>
+        <span>Logged in as <strong>{user.name}</strong> &middot; Elo: {user.rating}</span>
         <button onClick={logout}>Log out</button>
       </div>
       <h1>Tactic Monster</h1>
@@ -51,7 +55,7 @@ function App() {
         </button>
       </div>
       {activeTab === "play" ? (
-        <PuzzleBoard onAuthError={clearUser} />
+        <PuzzleBoard onAuthError={clearUser} userRating={user.rating} onRatingUpdate={handleRatingUpdate} />
       ) : (
         <StatsPage key={Date.now()} onAuthError={clearUser} />
       )}

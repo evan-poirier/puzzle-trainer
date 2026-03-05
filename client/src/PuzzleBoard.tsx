@@ -14,17 +14,19 @@ interface Puzzle {
 
 type PuzzleStatus = "loading" | "playing" | "correct" | "wrong" | "review";
 
-async function fetchPuzzle(): Promise<Puzzle | null> {
-  const res = await fetch("/api/puzzle/random?rating=1500");
+async function fetchPuzzle(rating: number): Promise<Puzzle | null> {
+  const res = await fetch(`/api/puzzle/random?rating=${rating}`);
   if (res.status === 401) return null;
   return res.json();
 }
 
 interface PuzzleBoardProps {
   onAuthError: () => void;
+  userRating: number;
+  onRatingUpdate: (newRating: number) => void;
 }
 
-export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
+export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate }: PuzzleBoardProps) {
   const [game, setGame] = useState(new Chess());
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
@@ -34,12 +36,13 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
   const [lastResult, setLastResult] = useState<{ puzzle: Puzzle; correct: boolean } | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
+  const [lastRatingChange, setLastRatingChange] = useState<number | null>(null);
   const prefetchedRef = useRef<Promise<Puzzle | null> | null>(null);
   const isDraggingRef = useRef(false);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
 
   function prefetchNext() {
-    prefetchedRef.current = fetchPuzzle();
+    prefetchedRef.current = fetchPuzzle(userRating);
   }
 
   function startPuzzle(data: Puzzle) {
@@ -69,7 +72,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     // Use prefetched puzzle if available, otherwise fetch fresh
     const pending = prefetchedRef.current;
     prefetchedRef.current = null;
-    const data = pending ? await pending : await fetchPuzzle();
+    const data = pending ? await pending : await fetchPuzzle(userRating);
 
     if (!data) {
       onAuthError();
@@ -91,7 +94,16 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ puzzleId: puzzle.puzzleId, correct }),
-    });
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.newRating != null) {
+          onRatingUpdate(data.newRating);
+          setLastRatingChange(data.ratingChange);
+          // Re-prefetch with updated rating
+          prefetchedRef.current = fetchPuzzle(data.newRating);
+        }
+      });
   }
 
   function makeOpponentMove(chess: Chess, moves: string[], nextIndex: number) {
@@ -238,8 +250,13 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
           <span className={lastResult.correct ? "status-correct" : "status-wrong"}>
             {lastResult.correct ? "Correct!" : "Incorrect"}
           </span>
+          {lastRatingChange != null && (
+            <span style={{ color: lastRatingChange >= 0 ? "#4caf50" : "#f44336", fontWeight: "bold" }}>
+              {lastRatingChange >= 0 ? "+" : ""}{lastRatingChange}
+            </span>
+          )}
           <div className="review-details">
-            <p>Rating: {lastResult.puzzle.rating}</p>
+            <p>Puzzle Rating: {lastResult.puzzle.rating}</p>
             <p>Themes: {lastResult.puzzle.themes.replace(/ /g, ", ")}</p>
           </div>
           <button className="interstitial-btn" onClick={loadPuzzle}>Next Puzzle</button>
