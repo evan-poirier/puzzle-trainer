@@ -151,6 +151,15 @@
   gap: 1rem;
 }
 
+.board-wrapper {
+  transition: opacity 0.2s;
+}
+
+.board-loading {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .puzzle-info {
   display: flex;
   gap: 1rem;

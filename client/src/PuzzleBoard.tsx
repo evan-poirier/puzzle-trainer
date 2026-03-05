@@ -181,15 +181,17 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
         )}
       </div>
 
-      <Chessboard
-        options={{
-          position: game.fen(),
-          onPieceDrop,
-          boardOrientation,
-          allowDragging: status === "playing",
-          boardStyle: { width: "480px", height: "480px" },
-        }}
-      />
+      <div className={status === "loading" ? "board-wrapper board-loading" : "board-wrapper"}>
+        <Chessboard
+          options={{
+            position: game.fen(),
+            onPieceDrop,
+            boardOrientation,
+            allowDragging: status === "playing",
+            boardStyle: { width: "480px", height: "480px" },
+          }}
+        />
+      </div>
 
       <div className="puzzle-status">
         {status === "loading" && <span>Loading puzzle...</span>}
