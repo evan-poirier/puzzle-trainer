@@ -39,7 +39,8 @@ jobs:
                 sudo cp -r /tmp/pt-deploy /opt/puzzletrainer/server/public && \
                 sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer/server/public && \
                 rm -rf /tmp/pt-deploy && \
-                cd /opt/puzzletrainer/server && sudo -u puzzletrainer npm ci && \
-                sudo -u puzzletrainer npx prisma generate && \
-                sudo -u puzzletrainer npm run build && \
+                cd /opt/puzzletrainer/server && sudo npm ci && \
+                sudo npx prisma generate && \
+                sudo npm run build && \
+                sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer && \
                 sudo systemctl restart puzzletrainer"
