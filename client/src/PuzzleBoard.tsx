@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess, type Square } from "chess.js";
 import type { PieceDropHandlerArgs } from "react-chessboard";
@@ -56,8 +56,6 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     setStatus("playing");
     setReported(false);
   }, [onAuthError]);
-
-  // no auto-load — user clicks Start first
 
   function reportResult(correct: boolean) {
     if (reported || !puzzle) return;
