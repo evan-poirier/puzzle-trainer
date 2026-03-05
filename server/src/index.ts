@@ -90,7 +90,8 @@ app.post("/api/auth/google", async (req: Request, res: Response) => {
 
     req.session.userId = user.id;
     res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture, rating: user.rating });
-  } catch {
+  } catch (err) {
+    console.error("Auth error:", err);
     res.status(401).json({ error: "Token verification failed" });
   }
 });
