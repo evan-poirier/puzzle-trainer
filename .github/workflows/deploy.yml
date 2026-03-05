@@ -1,0 +1,45 @@
+name: Deploy to GCP
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build client
+        run: cd client && npm ci && npm run build
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H 34.9.225.66 >> ~/.ssh/known_hosts
+
+      - name: Deploy to VM
+        run: |
+          SSH="ssh -i ~/.ssh/id_deploy evan@34.9.225.66"
+          SCP="scp -i ~/.ssh/id_deploy"
+
+          # Create staging dir, copy built client files
+          $SSH "mkdir -p /tmp/pt-deploy"
+          $SCP -r client/dist/* evan@34.9.225.66:/tmp/pt-deploy/
+
+          # Pull server code, replace public dir, rebuild, restart
+          $SSH "cd /opt/puzzletrainer && sudo git pull && \
+                sudo rm -rf /opt/puzzletrainer/server/public && \
+                sudo cp -r /tmp/pt-deploy /opt/puzzletrainer/server/public && \
+                sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer/server/public && \
+                rm -rf /tmp/pt-deploy && \
+                cd /opt/puzzletrainer/server && sudo -u puzzletrainer npm ci && \
+                sudo -u puzzletrainer npx prisma generate && \
+                sudo -u puzzletrainer npm run build && \
+                sudo systemctl restart puzzletrainer"
