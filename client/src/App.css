@@ -143,6 +143,25 @@
   color: #ddd;
 }
 
+.rating-chart {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.rating-chart h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #aaa;
+  font-weight: normal;
+}
+
+.rating-chart svg {
+  display: block;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
 /* Puzzle */
 .puzzle-container {
   display: flex;

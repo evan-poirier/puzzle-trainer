@@ -200,7 +200,19 @@ app.get("/api/stats", requireAuth, async (req: Request, res: Response) => {
     },
   });
 
-  res.json({ total, correct, accuracy, recent, rating: user?.rating ?? 1500 });
+  const ratingAttempts = await prisma.puzzleAttempt.findMany({
+    where: { userId, userRating: { not: null } },
+    orderBy: { createdAt: "asc" },
+    select: { userRating: true, createdAt: true },
+  });
+
+  const currentRating = user?.rating ?? 1500;
+  const ratingHistory = [
+    ...ratingAttempts.map((a) => ({ rating: a.userRating!, date: a.createdAt.toISOString() })),
+    { rating: currentRating, date: new Date().toISOString() },
+  ];
+
+  res.json({ total, correct, accuracy, recent, rating: currentRating, ratingHistory });
 });
 
 // Serve client build in production
