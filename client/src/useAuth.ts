@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 
 interface User {
   id: number;
-  username: string;
+  name: string;
+  email: string;
+  picture?: string;
 }
 
 export function useAuth() {
@@ -16,23 +18,19 @@ export function useAuth() {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(
-    async (username: string, password: string, isRegister: boolean) => {
-      const endpoint = isRegister ? "/api/register" : "/api/login";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || "Authentication failed");
-      }
-      const data = await res.json();
-      setUser(data);
-    },
-    []
-  );
+  const loginWithGoogle = useCallback(async (credential: string) => {
+    const res = await fetch("/api/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    });
+    if (!res.ok) {
+      const body = await res.json();
+      throw new Error(body.error || "Authentication failed");
+    }
+    const data = await res.json();
+    setUser(data);
+  }, []);
 
   const logout = useCallback(async () => {
     await fetch("/api/logout", { method: "POST" });
@@ -41,5 +39,5 @@ export function useAuth() {
 
   const clearUser = useCallback(() => setUser(null), []);
 
-  return { user, loading, login, logout, clearUser };
+  return { user, loading, loginWithGoogle, logout, clearUser };
 }

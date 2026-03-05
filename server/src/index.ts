@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
 
 declare module "express-session" {
   interface SessionData {
@@ -13,6 +13,8 @@ declare module "express-session" {
 const app = express();
 const prisma = new PrismaClient();
 const PORT = 3000;
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 app.use(express.json());
 
@@ -39,43 +41,44 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 
 // --- Auth routes ---
 
-app.post("/api/register", async (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    res.status(400).json({ error: "Username and password are required" });
+app.post("/api/auth/google", async (req: Request, res: Response) => {
+  const { credential } = req.body;
+  if (!credential) {
+    res.status(400).json({ error: "Missing credential" });
     return;
   }
 
-  const existing = await prisma.user.findUnique({ where: { username } });
-  if (existing) {
-    res.status(409).json({ error: "Username already taken" });
-    return;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.sub || !payload.email) {
+      res.status(401).json({ error: "Invalid token" });
+      return;
+    }
+
+    const user = await prisma.user.upsert({
+      where: { googleId: payload.sub },
+      update: {
+        email: payload.email,
+        name: payload.name || payload.email,
+        picture: payload.picture,
+      },
+      create: {
+        googleId: payload.sub,
+        email: payload.email,
+        name: payload.name || payload.email,
+        picture: payload.picture,
+      },
+    });
+
+    req.session.userId = user.id;
+    res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture });
+  } catch {
+    res.status(401).json({ error: "Token verification failed" });
   }
-
-  const hashed = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: { username, password: hashed },
-  });
-
-  req.session.userId = user.id;
-  res.json({ id: user.id, username: user.username });
-});
-
-app.post("/api/login", async (req: Request, res: Response) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    res.status(400).json({ error: "Username and password are required" });
-    return;
-  }
-
-  const user = await prisma.user.findUnique({ where: { username } });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    res.status(401).json({ error: "Invalid username or password" });
-    return;
-  }
-
-  req.session.userId = user.id;
-  res.json({ id: user.id, username: user.username });
 });
 
 app.get("/api/me", (req: Request, res: Response) => {
@@ -90,7 +93,7 @@ app.get("/api/me", (req: Request, res: Response) => {
         res.status(401).json({ error: "Not authenticated" });
         return;
       }
-      res.json({ id: user.id, username: user.username });
+      res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture });
     });
 });
 
@@ -111,6 +114,49 @@ app.get("/api/puzzle/random", requireAuth, async (_req, res) => {
   const skip = Math.floor(Math.random() * count);
   const puzzle = await prisma.puzzle.findFirst({ skip });
   res.json(puzzle);
+});
+
+app.post("/api/puzzle/attempt", requireAuth, async (req: Request, res: Response) => {
+  const { puzzleId, correct } = req.body;
+  if (!puzzleId || typeof correct !== "boolean") {
+    res.status(400).json({ error: "puzzleId and correct are required" });
+    return;
+  }
+
+  const puzzle = await prisma.puzzle.findUnique({ where: { puzzleId } });
+  if (!puzzle) {
+    res.status(404).json({ error: "Puzzle not found" });
+    return;
+  }
+
+  const attempt = await prisma.puzzleAttempt.create({
+    data: {
+      userId: req.session.userId!,
+      puzzleId: puzzle.id,
+      correct,
+    },
+  });
+
+  res.json(attempt);
+});
+
+app.get("/api/stats", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.session.userId!;
+
+  const total = await prisma.puzzleAttempt.count({ where: { userId } });
+  const correct = await prisma.puzzleAttempt.count({ where: { userId, correct: true } });
+  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  const recent = await prisma.puzzleAttempt.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    include: {
+      puzzle: { select: { rating: true, themes: true } },
+    },
+  });
+
+  res.json({ total, correct, accuracy, recent });
 });
 
 app.listen(PORT, () => {

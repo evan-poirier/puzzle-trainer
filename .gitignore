@@ -18,3 +18,7 @@ client/dist
 
 # Data
 *.csv
+
+# Environment
+.env.local
+.env.*.local

@@ -9,59 +9,17 @@
   margin-bottom: 1.5rem;
 }
 
-/* Auth form */
-.auth-form {
+/* Google sign-in */
+.google-signin {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.75rem;
-  max-width: 320px;
-  margin: 0 auto;
-}
-
-.auth-form h2 {
-  margin-bottom: 0.25rem;
-}
-
-.auth-form input {
-  padding: 0.6rem 0.75rem;
-  font-size: 1rem;
-  border: 1px solid #555;
-  border-radius: 4px;
-  background: #1a1a1a;
-  color: #fff;
-}
-
-.auth-form > button[type="submit"] {
-  padding: 0.6rem;
-  font-size: 1rem;
-  cursor: pointer;
-  border: 1px solid #555;
-  border-radius: 4px;
-  background: #1a1a1a;
-  color: #fff;
-}
-
-.auth-form > button[type="submit"]:hover {
-  background: #333;
 }
 
 .auth-error {
   color: #f44336;
   font-size: 0.9rem;
-}
-
-.auth-toggle {
-  font-size: 0.85rem;
-  color: #aaa;
-}
-
-.auth-toggle button {
-  background: none;
-  border: none;
-  color: #6fa8dc;
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: 0.85rem;
 }
 
 /* User bar */
@@ -87,6 +45,102 @@
 
 .user-bar button:hover {
   background: #333;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 1.5rem;
+}
+
+.tab-bar button {
+  padding: 0.5rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border: 1px solid #555;
+  background: #1a1a1a;
+  color: #aaa;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-bar button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.tab-bar button:last-child {
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+
+.tab-bar button:hover {
+  background: #333;
+}
+
+.tab-bar button.active {
+  background: #333;
+  color: #fff;
+  border-bottom: 2px solid #6fa8dc;
+}
+
+/* Stats */
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.stats-summary {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #1a1a1a;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-top: 0.25rem;
+}
+
+.stats-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.stats-table th {
+  color: #aaa;
+  font-weight: normal;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.stats-table td {
+  color: #ddd;
 }
 
 /* Puzzle */

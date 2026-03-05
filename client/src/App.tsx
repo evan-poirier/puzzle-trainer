@@ -1,10 +1,15 @@
+import { useState } from 'react'
 import PuzzleBoard from './PuzzleBoard'
-import AuthForm from './AuthForm'
+import StatsPage from './StatsPage'
+import GoogleSignIn from './GoogleSignIn'
 import { useAuth } from './useAuth'
 import './App.css'
 
+type Tab = "play" | "stats"
+
 function App() {
-  const { user, loading, login, logout, clearUser } = useAuth()
+  const { user, loading, loginWithGoogle, logout, clearUser } = useAuth()
+  const [activeTab, setActiveTab] = useState<Tab>("play")
 
   if (loading) {
     return (
@@ -19,7 +24,7 @@ function App() {
     return (
       <div className="app">
         <h1>Puzzle Trainer</h1>
-        <AuthForm onAuth={login} />
+        <GoogleSignIn onAuth={loginWithGoogle} />
       </div>
     )
   }
@@ -27,11 +32,29 @@ function App() {
   return (
     <div className="app">
       <div className="user-bar">
-        <span>Logged in as <strong>{user.username}</strong></span>
+        <span>Logged in as <strong>{user.name}</strong></span>
         <button onClick={logout}>Log out</button>
       </div>
       <h1>Puzzle Trainer</h1>
-      <PuzzleBoard onAuthError={clearUser} />
+      <div className="tab-bar">
+        <button
+          className={activeTab === "play" ? "active" : ""}
+          onClick={() => setActiveTab("play")}
+        >
+          Play
+        </button>
+        <button
+          className={activeTab === "stats" ? "active" : ""}
+          onClick={() => setActiveTab("stats")}
+        >
+          Stats
+        </button>
+      </div>
+      {activeTab === "play" ? (
+        <PuzzleBoard onAuthError={clearUser} />
+      ) : (
+        <StatsPage key={Date.now()} onAuthError={clearUser} />
+      )}
     </div>
   )
 }

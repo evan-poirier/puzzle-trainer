@@ -24,6 +24,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
   const [moveIndex, setMoveIndex] = useState(0);
   const [status, setStatus] = useState<PuzzleStatus>("loading");
+  const [reported, setReported] = useState(false);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
 
   const loadPuzzle = useCallback(async () => {
@@ -52,11 +53,22 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     setGame(chess);
     setMoveIndex(1);
     setStatus("playing");
+    setReported(false);
   }, [onAuthError]);
 
   useEffect(() => {
     loadPuzzle();
   }, [loadPuzzle]);
+
+  function reportResult(correct: boolean) {
+    if (reported || !puzzle) return;
+    setReported(true);
+    fetch("/api/puzzle/attempt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ puzzleId: puzzle.puzzleId, correct }),
+    });
+  }
 
   function makeOpponentMove(chess: Chess, moves: string[], nextIndex: number) {
     const opponentUci = moves[nextIndex];
@@ -108,6 +120,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
 
     if (nextIndex >= solutionMoves.length) {
       setStatus("correct");
+      reportResult(true);
       return true;
     }
 
@@ -145,7 +158,10 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
 
       <div className="puzzle-controls">
         {(status === "correct" || status === "wrong") && (
-          <button onClick={loadPuzzle}>Next Puzzle</button>
+          <button onClick={() => {
+            if (status === "wrong") reportResult(false);
+            loadPuzzle();
+          }}>Next Puzzle</button>
         )}
         {status === "wrong" && (
           <button onClick={() => {

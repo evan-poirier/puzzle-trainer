@@ -8,10 +8,13 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id        Int              @id @default(autoincrement())
+  googleId  String           @unique
+  email     String           @unique
+  name      String
+  picture   String?
+  createdAt DateTime         @default(now())
+  attempts  PuzzleAttempt[]
 }
 
 model Session {
@@ -22,8 +25,8 @@ model Session {
 }
 
 model Puzzle {
-  id              Int    @id @default(autoincrement())
-  puzzleId        String @unique
+  id              Int              @id @default(autoincrement())
+  puzzleId        String           @unique
   fen             String
   moves           String
   rating          Int
@@ -33,4 +36,15 @@ model Puzzle {
   themes          String
   gameUrl         String
   openingTags     String
+  attempts        PuzzleAttempt[]
+}
+
+model PuzzleAttempt {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  puzzleId  Int
+  correct   Boolean
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  puzzle    Puzzle   @relation(fields: [puzzleId], references: [id])
 }
