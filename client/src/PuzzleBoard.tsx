@@ -15,7 +15,7 @@ interface Puzzle {
 type PuzzleStatus = "loading" | "playing" | "correct" | "wrong" | "review";
 
 async function fetchPuzzle(): Promise<Puzzle | null> {
-  const res = await fetch("/api/puzzle/random");
+  const res = await fetch("/api/puzzle/random?rating=1500");
   if (res.status === 401) return null;
   return res.json();
 }
