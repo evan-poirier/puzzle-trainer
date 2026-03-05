@@ -12,7 +12,7 @@ interface Puzzle {
   themes: string;
 }
 
-type PuzzleStatus = "loading" | "playing" | "correct" | "wrong";
+type PuzzleStatus = "start" | "loading" | "playing" | "correct" | "wrong" | "review";
 
 interface PuzzleBoardProps {
   onAuthError: () => void;
@@ -23,8 +23,9 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
   const [moveIndex, setMoveIndex] = useState(0);
-  const [status, setStatus] = useState<PuzzleStatus>("loading");
+  const [status, setStatus] = useState<PuzzleStatus>("start");
   const [reported, setReported] = useState(false);
+  const [lastResult, setLastResult] = useState<{ puzzle: Puzzle; correct: boolean } | null>(null);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
 
   const loadPuzzle = useCallback(async () => {
@@ -56,9 +57,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     setReported(false);
   }, [onAuthError]);
 
-  useEffect(() => {
-    loadPuzzle();
-  }, [loadPuzzle]);
+  // no auto-load — user clicks Start first
 
   function reportResult(correct: boolean) {
     if (reported || !puzzle) return;
@@ -129,14 +128,40 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     return true;
   }
 
+  if (status === "start") {
+    return (
+      <div className="puzzle-container">
+        <div className="interstitial">
+          <h2>Puzzle Training</h2>
+          <p>Solve tactical puzzles to sharpen your chess skills.</p>
+          <button className="interstitial-btn" onClick={loadPuzzle}>Start</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "review" && lastResult) {
+    return (
+      <div className="puzzle-container">
+        <div className="interstitial">
+          <span className={lastResult.correct ? "status-correct" : "status-wrong"}>
+            {lastResult.correct ? "Correct!" : "Incorrect"}
+          </span>
+          <div className="review-details">
+            <p>Rating: {lastResult.puzzle.rating}</p>
+            <p>Themes: {lastResult.puzzle.themes.replace(/ /g, ", ")}</p>
+          </div>
+          <button className="interstitial-btn" onClick={loadPuzzle}>Next Puzzle</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="puzzle-container">
       <div className="puzzle-info">
         {puzzle && (
-          <>
-            <span className="puzzle-rating">Rating: {puzzle.rating}</span>
-            <span className="puzzle-themes">{puzzle.themes.replace(/ /g, ", ")}</span>
-          </>
+          <span className="puzzle-rating">Rating: {puzzle.rating}</span>
         )}
       </div>
 
@@ -161,8 +186,9 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
         {(status === "correct" || status === "wrong") && (
           <button onClick={() => {
             if (status === "wrong") reportResult(false);
-            loadPuzzle();
-          }}>Next Puzzle</button>
+            setLastResult({ puzzle: puzzle!, correct: status === "correct" });
+            setStatus("review");
+          }}>Continue</button>
         )}
         {status === "wrong" && (
           <button onClick={() => {

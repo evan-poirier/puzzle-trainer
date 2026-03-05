@@ -191,3 +191,54 @@
 .puzzle-controls button:hover {
   background: #333;
 }
+
+/* Interstitial screens */
+.interstitial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #1a1a1a;
+  min-width: 320px;
+}
+
+.interstitial h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.interstitial p {
+  margin: 0;
+  color: #aaa;
+}
+
+.interstitial-btn {
+  padding: 0.6rem 2rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #2a4a6b;
+  color: #fff;
+  margin-top: 0.5rem;
+}
+
+.interstitial-btn:hover {
+  background: #3a5a7b;
+}
+
+.review-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+.review-details p {
+  margin: 0;
+}
