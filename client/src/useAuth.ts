@@ -10,12 +10,19 @@ export interface User {
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
+  const [initialPuzzle, setInitialPuzzle] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/me")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setUser(data))
+      .then((data) => {
+        if (data) {
+          const { initialPuzzle: puzzle, ...userData } = data;
+          setUser(userData);
+          setInitialPuzzle(puzzle);
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -26,8 +33,10 @@ export function useAuth() {
       body: JSON.stringify({ credential }),
     });
     if (!res.ok) {
-      const body = await res.json();
-      throw new Error(body.error || "Authentication failed");
+      const text = await res.text();
+      let message = "Authentication failed";
+      try { message = JSON.parse(text).error || message; } catch {}
+      throw new Error(message);
     }
     const data = await res.json();
     setUser(data);
@@ -40,5 +49,5 @@ export function useAuth() {
 
   const clearUser = useCallback(() => setUser(null), []);
 
-  return { user, setUser, loading, loginWithGoogle, logout, clearUser };
+  return { user, setUser, initialPuzzle, loading, loginWithGoogle, logout, clearUser };
 }

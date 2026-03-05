@@ -95,20 +95,18 @@ app.post("/api/auth/google", async (req: Request, res: Response) => {
   }
 });
 
-app.get("/api/me", (req: Request, res: Response) => {
+app.get("/api/me", async (req: Request, res: Response) => {
   if (!req.session.userId) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
-  prisma.user
-    .findUnique({ where: { id: req.session.userId } })
-    .then((user) => {
-      if (!user) {
-        res.status(401).json({ error: "Not authenticated" });
-        return;
-      }
-      res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture, rating: user.rating });
-    });
+  const user = await prisma.user.findUnique({ where: { id: req.session.userId } });
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+  const initialPuzzle = await getRandomPuzzle(user.rating);
+  res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture, rating: user.rating, initialPuzzle });
 });
 
 app.post("/api/logout", (req: Request, res: Response) => {
@@ -119,25 +117,29 @@ app.post("/api/logout", (req: Request, res: Response) => {
 
 // --- Puzzle routes ---
 
+async function getRandomPuzzle(targetRating: number | null) {
+  const ratingFilter = targetRating
+    ? { rating: { gte: targetRating - 250, lte: targetRating + 250 } }
+    : {};
+
+  const count = await prisma.puzzle.count({ where: ratingFilter });
+  if (count === 0) return null;
+
+  const skip = Math.floor(Math.random() * count);
+  return prisma.puzzle.findFirst({ where: ratingFilter, skip });
+}
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
 app.get("/api/puzzle/random", requireAuth, async (req, res) => {
   const targetRating = req.query.rating ? parseInt(req.query.rating as string) : null;
-
-  const ratingFilter = targetRating
-    ? { rating: { gte: targetRating - 250, lte: targetRating + 250 } }
-    : {};
-
-  const count = await prisma.puzzle.count({ where: ratingFilter });
-  if (count === 0) {
+  const puzzle = await getRandomPuzzle(targetRating);
+  if (!puzzle) {
     res.status(404).json({ error: "No puzzles found in that rating range" });
     return;
   }
-
-  const skip = Math.floor(Math.random() * count);
-  const puzzle = await prisma.puzzle.findFirst({ where: ratingFilter, skip });
   res.json(puzzle);
 });
 

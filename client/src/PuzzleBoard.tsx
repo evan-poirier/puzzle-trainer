@@ -24,9 +24,10 @@ interface PuzzleBoardProps {
   onAuthError: () => void;
   userRating: number;
   onRatingUpdate: (newRating: number) => void;
+  initialPuzzle?: unknown;
 }
 
-export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate }: PuzzleBoardProps) {
+export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate, initialPuzzle }: PuzzleBoardProps) {
   const [game, setGame] = useState(new Chess());
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
@@ -37,6 +38,7 @@ export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate }:
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [lastRatingChange, setLastRatingChange] = useState<number | null>(null);
+  const initialPuzzleRef = useRef<unknown>(initialPuzzle);
   const prefetchedRef = useRef<Promise<Puzzle | null> | null>(null);
   const isDraggingRef = useRef(false);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
@@ -69,10 +71,18 @@ export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate }:
   const loadPuzzle = useCallback(async () => {
     setStatus("loading");
 
-    // Use prefetched puzzle if available, otherwise fetch fresh
-    const pending = prefetchedRef.current;
-    prefetchedRef.current = null;
-    const data = pending ? await pending : await fetchPuzzle(userRating);
+    // Use initial puzzle (first load), prefetched, or fetch fresh
+    const initial = initialPuzzleRef.current as Puzzle | null;
+    initialPuzzleRef.current = null;
+
+    let data: Puzzle | null;
+    if (initial) {
+      data = initial;
+    } else {
+      const pending = prefetchedRef.current;
+      prefetchedRef.current = null;
+      data = pending ? await pending : await fetchPuzzle(userRating);
+    }
 
     if (!data) {
       onAuthError();

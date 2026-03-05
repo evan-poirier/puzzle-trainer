@@ -22,3 +22,6 @@ client/dist
 # Environment
 .env.local
 .env.*.local
+
+# AI
+.claude

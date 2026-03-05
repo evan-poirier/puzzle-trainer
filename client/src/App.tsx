@@ -8,7 +8,7 @@ import './App.css'
 type Tab = "play" | "stats"
 
 function App() {
-  const { user, setUser, loading, loginWithGoogle, logout, clearUser } = useAuth()
+  const { user, setUser, initialPuzzle, loading, loginWithGoogle, logout, clearUser } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>("play")
 
   const handleRatingUpdate = useCallback((newRating: number) => {
@@ -55,7 +55,7 @@ function App() {
         </button>
       </div>
       {activeTab === "play" ? (
-        <PuzzleBoard onAuthError={clearUser} userRating={user.rating} onRatingUpdate={handleRatingUpdate} />
+        <PuzzleBoard onAuthError={clearUser} userRating={user.rating} onRatingUpdate={handleRatingUpdate} initialPuzzle={initialPuzzle} />
       ) : (
         <StatsPage key={Date.now()} onAuthError={clearUser} />
       )}
