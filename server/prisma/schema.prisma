@@ -38,6 +38,8 @@ model Puzzle {
   gameUrl         String
   openingTags     String
   attempts        PuzzleAttempt[]
+
+  @@index([rating])
 }
 
 model PuzzleAttempt {
