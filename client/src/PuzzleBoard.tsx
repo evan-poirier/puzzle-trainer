@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess, type Square } from "chess.js";
 import type { PieceDropHandlerArgs } from "react-chessboard";
@@ -14,6 +14,12 @@ interface Puzzle {
 
 type PuzzleStatus = "start" | "loading" | "playing" | "correct" | "wrong" | "review";
 
+async function fetchPuzzle(): Promise<Puzzle | null> {
+  const res = await fetch("/api/puzzle/random");
+  if (res.status === 401) return null;
+  return res.json();
+}
+
 interface PuzzleBoardProps {
   onAuthError: () => void;
 }
@@ -26,24 +32,19 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
   const [status, setStatus] = useState<PuzzleStatus>("start");
   const [reported, setReported] = useState(false);
   const [lastResult, setLastResult] = useState<{ puzzle: Puzzle; correct: boolean } | null>(null);
+  const prefetchedRef = useRef<Promise<Puzzle | null> | null>(null);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
 
-  const loadPuzzle = useCallback(async () => {
-    setStatus("loading");
-    const res = await fetch("/api/puzzle/random");
-    if (res.status === 401) {
-      onAuthError();
-      return;
-    }
-    const data: Puzzle = await res.json();
-    setPuzzle(data);
+  function prefetchNext() {
+    prefetchedRef.current = fetchPuzzle();
+  }
 
+  function startPuzzle(data: Puzzle) {
+    setPuzzle(data);
     const moves = data.moves.split(" ");
     setSolutionMoves(moves);
 
     const chess = new Chess(data.fen);
-
-    // Play the opponent's setup move
     const setupMove = moves[0];
     chess.move({
       from: setupMove.substring(0, 2) as Square,
@@ -55,6 +56,23 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     setMoveIndex(1);
     setStatus("playing");
     setReported(false);
+  }
+
+  const loadPuzzle = useCallback(async () => {
+    setStatus("loading");
+
+    // Use prefetched puzzle if available, otherwise fetch fresh
+    const pending = prefetchedRef.current;
+    prefetchedRef.current = null;
+    const data = pending ? await pending : await fetchPuzzle();
+
+    if (!data) {
+      onAuthError();
+      return;
+    }
+
+    startPuzzle(data);
+    prefetchNext();
   }, [onAuthError]);
 
   function reportResult(correct: boolean) {

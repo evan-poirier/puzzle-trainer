@@ -119,9 +119,20 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.get("/api/puzzle/random", requireAuth, async (_req, res) => {
-  const count = await prisma.puzzle.count();
-  const skip = Math.floor(Math.random() * count);
-  const puzzle = await prisma.puzzle.findFirst({ skip });
+  const { _max } = await prisma.puzzle.aggregate({ _max: { id: true } });
+  const maxId = _max.id ?? 1;
+  const randomId = Math.floor(Math.random() * maxId) + 1;
+  // Find the closest puzzle at or above the random ID (handles gaps)
+  const puzzle = await prisma.puzzle.findFirst({
+    where: { id: { gte: randomId } },
+    orderBy: { id: "asc" },
+  });
+  // Wrap around if we picked past the last row
+  if (!puzzle) {
+    const fallback = await prisma.puzzle.findFirst({ orderBy: { id: "asc" } });
+    res.json(fallback);
+    return;
+  }
   res.json(puzzle);
 });
 
