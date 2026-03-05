@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess, type Square } from "chess.js";
-import type { PieceDropHandlerArgs } from "react-chessboard/dist/types";
+import type { PieceDropHandlerArgs } from "react-chessboard";
 
 interface Puzzle {
   id: number;
