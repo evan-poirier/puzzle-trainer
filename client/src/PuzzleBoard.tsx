@@ -35,6 +35,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const prefetchedRef = useRef<Promise<Puzzle | null> | null>(null);
+  const isDraggingRef = useRef(false);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
 
   function prefetchNext() {
@@ -165,6 +166,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
 
   function onSquareClick({ square }: { piece: unknown; square: string }) {
     if (status !== "playing") return;
+    if (isDraggingRef.current) return;
 
     if (selectedSquare && legalMoves.includes(square)) {
       tryMove(selectedSquare, square);
@@ -179,7 +181,12 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     }
   }
 
+  function onPieceDrag() {
+    isDraggingRef.current = true;
+  }
+
   function onPieceDrop({ sourceSquare, targetSquare, piece }: PieceDropHandlerArgs): boolean {
+    isDraggingRef.current = false;
     clearSelection();
     if (status !== "playing" || !targetSquare) return false;
     if (sourceSquare === targetSquare) return false;
@@ -249,6 +256,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
           options={{
             position: game.fen(),
             onPieceDrop,
+            onPieceDrag,
             onSquareClick,
             boardOrientation,
             allowDragging: status === "playing",
@@ -271,9 +279,9 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
       </div>
 
       <div className="puzzle-status">
-        {status === "playing" && <span>Your turn — find the best move</span>}
+        {status === "playing" && <span>Find the best move</span>}
         {status === "correct" && <span className="status-correct">Correct!</span>}
-        {status === "wrong" && <span className="status-wrong">Wrong move — try again</span>}
+        {status === "wrong" && <span className="status-wrong">Incorrect; try again</span>}
       </div>
 
       <div className="puzzle-controls">
