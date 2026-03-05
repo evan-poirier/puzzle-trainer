@@ -35,7 +35,7 @@ function App() {
         <span>Logged in as <strong>{user.name}</strong></span>
         <button onClick={logout}>Log out</button>
       </div>
-      <h1>Puzzle Trainer</h1>
+      <h1>Tactic Monster</h1>
       <div className="tab-bar">
         <button
           className={activeTab === "play" ? "active" : ""}

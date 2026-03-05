@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess, type Square } from "chess.js";
 import type { PieceDropHandlerArgs } from "react-chessboard";
@@ -12,7 +12,7 @@ interface Puzzle {
   themes: string;
 }
 
-type PuzzleStatus = "start" | "loading" | "playing" | "correct" | "wrong" | "review";
+type PuzzleStatus = "loading" | "playing" | "correct" | "wrong" | "review";
 
 async function fetchPuzzle(): Promise<Puzzle | null> {
   const res = await fetch("/api/puzzle/random");
@@ -29,9 +29,11 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [solutionMoves, setSolutionMoves] = useState<string[]>([]);
   const [moveIndex, setMoveIndex] = useState(0);
-  const [status, setStatus] = useState<PuzzleStatus>("start");
+  const [status, setStatus] = useState<PuzzleStatus>("loading");
   const [reported, setReported] = useState(false);
   const [lastResult, setLastResult] = useState<{ puzzle: Puzzle; correct: boolean } | null>(null);
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const prefetchedRef = useRef<Promise<Puzzle | null> | null>(null);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
 
@@ -56,6 +58,8 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     setMoveIndex(1);
     setStatus("playing");
     setReported(false);
+    setSelectedSquare(null);
+    setLegalMoves([]);
   }
 
   const loadPuzzle = useCallback(async () => {
@@ -74,6 +78,10 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     startPuzzle(data);
     prefetchNext();
   }, [onAuthError]);
+
+  useEffect(() => {
+    loadPuzzle();
+  }, [loadPuzzle]);
 
   function reportResult(correct: boolean) {
     if (reported || !puzzle) return;
@@ -100,7 +108,79 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     }, 300);
   }
 
+  function selectPiece(square: string) {
+    const moves = game.moves({ square: square as Square, verbose: true });
+    if (moves.length > 0) {
+      setSelectedSquare(square);
+      setLegalMoves(moves.map((m) => m.to));
+    } else {
+      setSelectedSquare(null);
+      setLegalMoves([]);
+    }
+  }
+
+  function clearSelection() {
+    setSelectedSquare(null);
+    setLegalMoves([]);
+  }
+
+  function tryMove(from: string, to: string) {
+    const expectedUci = solutionMoves[moveIndex];
+    const expectedFrom = expectedUci.substring(0, 2);
+    const expectedTo = expectedUci.substring(2, 4);
+    const expectedPromotion = expectedUci.length > 4 ? expectedUci[4] : undefined;
+
+    const chess = new Chess(game.fen());
+    const move = chess.move({
+      from: from as Square,
+      to: to as Square,
+      promotion: expectedPromotion,
+    });
+    if (!move) return;
+
+    clearSelection();
+
+    if (from !== expectedFrom || to !== expectedTo) {
+      setStatus("wrong");
+      return;
+    }
+
+    if (expectedPromotion) {
+      const piece = game.get(from as Square);
+      if (piece && piece.type !== expectedPromotion) {
+        setStatus("wrong");
+        return;
+      }
+    }
+
+    setGame(new Chess(chess.fen()));
+    const nextIndex = moveIndex + 1;
+    if (nextIndex >= solutionMoves.length) {
+      setStatus("correct");
+      reportResult(true);
+      return;
+    }
+    makeOpponentMove(chess, solutionMoves, nextIndex);
+  }
+
+  function onSquareClick({ square }: { piece: unknown; square: string }) {
+    if (status !== "playing") return;
+
+    if (selectedSquare && legalMoves.includes(square)) {
+      tryMove(selectedSquare, square);
+      return;
+    }
+
+    const piece = game.get(square as Square);
+    if (piece && piece.color === game.turn()) {
+      selectPiece(square);
+    } else {
+      clearSelection();
+    }
+  }
+
   function onPieceDrop({ sourceSquare, targetSquare, piece }: PieceDropHandlerArgs): boolean {
+    clearSelection();
     if (status !== "playing" || !targetSquare) return false;
     if (sourceSquare === targetSquare) return false;
 
@@ -144,18 +224,6 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
     return true;
   }
 
-  if (status === "start") {
-    return (
-      <div className="puzzle-container">
-        <div className="interstitial">
-          <h2>Puzzle Training</h2>
-          <p>Solve tactical puzzles to sharpen your chess skills.</p>
-          <button className="interstitial-btn" onClick={loadPuzzle}>Start</button>
-        </div>
-      </div>
-    );
-  }
-
   if (status === "review" && lastResult) {
     return (
       <div className="puzzle-container">
@@ -175,26 +243,34 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
 
   return (
     <div className="puzzle-container">
-      <div className="puzzle-info">
-        {puzzle && (
-          <span className="puzzle-rating">Rating: {puzzle.rating}</span>
-        )}
-      </div>
-
       <div className={status === "loading" ? "board-wrapper board-loading" : "board-wrapper"}>
+        {status === "loading" && <div className="board-loading-overlay">Loading puzzle...</div>}
         <Chessboard
           options={{
             position: game.fen(),
             onPieceDrop,
+            onSquareClick,
             boardOrientation,
             allowDragging: status === "playing",
             boardStyle: { width: "480px", height: "480px" },
+            squareStyles: {
+              ...(selectedSquare ? { [selectedSquare]: { background: "rgba(255, 255, 0, 0.4)" } } : {}),
+              ...Object.fromEntries(
+                legalMoves.map((sq) => {
+                  const hasPiece = game.get(sq as Square);
+                  return [sq, {
+                    background: hasPiece
+                      ? "radial-gradient(circle, transparent 55%, rgba(0, 0, 0, 0.3) 55%)"
+                      : "radial-gradient(circle, rgba(0, 0, 0, 0.25) 25%, transparent 25%)",
+                  }];
+                })
+              ),
+            },
           }}
         />
       </div>
 
       <div className="puzzle-status">
-        {status === "loading" && <span>Loading puzzle...</span>}
         {status === "playing" && <span>Your turn — find the best move</span>}
         {status === "correct" && <span className="status-correct">Correct!</span>}
         {status === "wrong" && <span className="status-wrong">Wrong move — try again</span>}
@@ -212,6 +288,7 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
           <button onClick={() => {
             setGame(new Chess(game.fen()));
             setStatus("playing");
+            clearSelection();
           }}>
             Retry
           </button>
