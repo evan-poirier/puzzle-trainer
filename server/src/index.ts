@@ -3,6 +3,7 @@ import session from "express-session";
 import { PrismaSessionStore } from "@quixo3/prisma-session-store";
 import { PrismaClient } from "@prisma/client";
 import { OAuth2Client } from "google-auth-library";
+import path from "path";
 
 declare module "express-session" {
   interface SessionData {
@@ -12,7 +13,12 @@ declare module "express-session" {
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000");
+const isProd = process.env.NODE_ENV === "production";
+
+if (isProd) {
+  app.set("trust proxy", 1);
+}
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -20,7 +26,10 @@ app.use(express.json());
 
 app.use(
   session({
-    cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }, // 7 days
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: isProd,
+    },
     secret: process.env.SESSION_SECRET || "puzzle-trainer-dev-secret",
     resave: false,
     saveUninitialized: false,
@@ -158,6 +167,15 @@ app.get("/api/stats", requireAuth, async (req: Request, res: Response) => {
 
   res.json({ total, correct, accuracy, recent });
 });
+
+// Serve client build in production
+if (isProd) {
+  const clientPath = path.join(import.meta.dirname, "../public");
+  app.use(express.static(clientPath));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(clientPath, "index.html"));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

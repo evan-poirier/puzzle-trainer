@@ -1,0 +1,15 @@
+[Unit]
+Description=PuzzleTrainer
+After=network.target
+
+[Service]
+Type=simple
+User=puzzletrainer
+WorkingDirectory=/opt/puzzletrainer/server
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/opt/puzzletrainer/.env
+
+[Install]
+WantedBy=multi-user.target
