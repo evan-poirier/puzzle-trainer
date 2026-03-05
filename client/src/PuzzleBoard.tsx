@@ -87,11 +87,20 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
 
   function onPieceDrop({ sourceSquare, targetSquare, piece }: PieceDropHandlerArgs): boolean {
     if (status !== "playing" || !targetSquare) return false;
+    if (sourceSquare === targetSquare) return false;
 
     const expectedUci = solutionMoves[moveIndex];
     const expectedFrom = expectedUci.substring(0, 2);
     const expectedTo = expectedUci.substring(2, 4);
     const expectedPromotion = expectedUci.length > 4 ? expectedUci[4] : undefined;
+
+    const chess = new Chess(game.fen());
+    const move = chess.move({
+      from: sourceSquare as Square,
+      to: targetSquare as Square,
+      promotion: expectedPromotion,
+    });
+    if (!move) return false;
 
     if (sourceSquare !== expectedFrom || targetSquare !== expectedTo) {
       setStatus("wrong");
@@ -105,14 +114,6 @@ export default function PuzzleBoard({ onAuthError }: PuzzleBoardProps) {
         return false;
       }
     }
-
-    const chess = new Chess(game.fen());
-    const move = chess.move({
-      from: sourceSquare as Square,
-      to: targetSquare as Square,
-      promotion: expectedPromotion,
-    });
-    if (!move) return false;
 
     setGame(new Chess(chess.fen()));
 
