@@ -16,6 +16,8 @@ jobs:
 
       - name: Build client
         run: cd client && npm ci && npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
 
       - name: Set up SSH
         run: |
@@ -34,7 +36,8 @@ jobs:
           $SCP -r client/dist/* evan@34.9.225.66:/tmp/pt-deploy/
 
           # Pull server code, replace public dir, rebuild, restart
-          $SSH "cd /opt/puzzletrainer && sudo git pull && \
+          $SSH "sudo git config --global --add safe.directory /opt/puzzletrainer && \
+                cd /opt/puzzletrainer && sudo git pull && \
                 sudo rm -rf /opt/puzzletrainer/server/public && \
                 sudo cp -r /tmp/pt-deploy /opt/puzzletrainer/server/public && \
                 sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer/server/public && \
