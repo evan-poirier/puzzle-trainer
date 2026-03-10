@@ -28,7 +28,7 @@ jobs:
 
       - name: Write .env on VM
         run: |
-          ssh -i ~/.ssh/id_deploy evan@34.9.225.66 "printf 'NODE_ENV=production\nPORT=3000\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nSESSION_SECRET=${{ secrets.SESSION_SECRET }}\n' | sudo tee /opt/puzzletrainer/.env > /dev/null"
+          ssh -i ~/.ssh/id_deploy evan@34.9.225.66 "printf 'NODE_ENV=production\nPORT=3000\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nSESSION_SECRET=${{ secrets.SESSION_SECRET }}\nDATABASE_URL=${{ secrets.DATABASE_URL }}\n' | sudo tee /opt/puzzletrainer/.env > /dev/null"
 
       - name: Deploy to VM
         run: |
@@ -47,7 +47,7 @@ jobs:
                 sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer/server/public && \
                 rm -rf /tmp/pt-deploy && \
                 cd /opt/puzzletrainer/server && sudo npm ci && \
-                sudo npx prisma generate && \
                 sudo npm run build && \
+                sudo -u puzzletrainer npm run migrate:deploy && \
                 sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer && \
                 sudo systemctl restart puzzletrainer"
