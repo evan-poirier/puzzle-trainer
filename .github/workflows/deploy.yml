@@ -26,6 +26,10 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H 34.9.225.66 >> ~/.ssh/known_hosts
 
+      - name: Write .env on VM
+        run: |
+          ssh -i ~/.ssh/id_deploy evan@34.9.225.66 "printf 'NODE_ENV=production\nPORT=3000\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nSESSION_SECRET=${{ secrets.SESSION_SECRET }}\n' | sudo tee /opt/puzzletrainer/.env > /dev/null"
+
       - name: Deploy to VM
         run: |
           SSH="ssh -i ~/.ssh/id_deploy evan@34.9.225.66"

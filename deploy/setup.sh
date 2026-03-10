@@ -2,14 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# PuzzleTrainer GCP Compute Engine Setup Script
-#
-# Run this on a fresh Debian/Ubuntu e2-micro VM:
-#   sudo bash setup.sh
-#
-# Prerequisites:
-#   - Your repo pushed to a git remote (GitHub, etc.)
-#   - A .env file ready with your secrets
+# Run when deploying on a fresh VM for first time
 # ============================================================
 
 REPO_URL="${1:?Usage: setup.sh <git-repo-url>}"
@@ -84,10 +77,4 @@ nginx -t && systemctl restart nginx
 
 echo ""
 echo "==> Done! PuzzleTrainer is running."
-echo ""
-echo "Next steps:"
-echo "  1. Edit /opt/puzzletrainer/.env with your real secrets"
-echo "  2. Seed the database: sudo -u puzzletrainer bash -c 'cd /opt/puzzletrainer/server && npx prisma db seed'"
-echo "  3. Restart: sudo systemctl restart puzzletrainer"
-echo "  4. (Optional) Set up HTTPS with: sudo apt install certbot python3-certbot-nginx && sudo certbot --nginx"
 echo ""
