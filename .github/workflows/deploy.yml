@@ -48,6 +48,6 @@ jobs:
                 rm -rf /tmp/pt-deploy && \
                 cd /opt/puzzletrainer/server && sudo npm ci && \
                 sudo npm run build && \
-                sudo -u puzzletrainer bash -c 'set -a && source /opt/puzzletrainer/.env && set +a && cd /opt/puzzletrainer/server && npm run migrate:deploy' && \
+                sudo -u puzzletrainer env DATABASE_URL="$(sudo grep ^DATABASE_URL /opt/puzzletrainer/.env | cut -d= -f2-)" bash -c 'cd /opt/puzzletrainer/server && npm run migrate:deploy' && \
                 sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer && \
                 sudo systemctl restart puzzletrainer"
