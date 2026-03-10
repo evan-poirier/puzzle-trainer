@@ -51,3 +51,12 @@ jobs:
                 sudo -u puzzletrainer env DATABASE_URL='${{ secrets.DATABASE_URL }}' bash -c 'cd /opt/puzzletrainer/server && npm run migrate:deploy' && \
                 sudo chown -R puzzletrainer:puzzletrainer /opt/puzzletrainer && \
                 sudo systemctl restart puzzletrainer"
+
+      - name: Wait for server to restart
+        run: sleep 5
+
+      - name: Install Playwright
+        run: cd e2e && npm ci && npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        run: cd e2e && npm test
