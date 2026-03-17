@@ -116,6 +116,28 @@ app.post("/api/logout", (req: Request, res: Response) => {
   });
 });
 
+// Test-only login endpoint, gated by TEST_AUTH_KEY secret
+app.post("/api/auth/test-login", async (req: Request, res: Response) => {
+  const key = req.headers["x-test-auth-key"];
+  if (!process.env.TEST_AUTH_KEY || key !== process.env.TEST_AUTH_KEY) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const user = await prisma.user.upsert({
+    where: { googleId: "test-user" },
+    update: {},
+    create: {
+      googleId: "test-user",
+      email: "test@test.com",
+      name: "Test User",
+    },
+  });
+
+  req.session.userId = user.id;
+  res.json({ id: user.id, name: user.name, email: user.email, picture: user.picture, rating: user.rating });
+});
+
 // --- Puzzle routes ---
 
 async function getRandomPuzzle(targetRating: number | null) {

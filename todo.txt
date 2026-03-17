@@ -1,1 +1,0 @@
-make postgres spin up locally on npm run dev, spin down. ideally dockerize this

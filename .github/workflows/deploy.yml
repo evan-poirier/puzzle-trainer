@@ -28,7 +28,7 @@ jobs:
 
       - name: Write .env on VM
         run: |
-          ssh -i ~/.ssh/id_deploy evan@34.9.225.66 "printf 'NODE_ENV=production\nPORT=3000\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nSESSION_SECRET=${{ secrets.SESSION_SECRET }}\nDATABASE_URL=${{ secrets.DATABASE_URL }}\n' | sudo tee /opt/puzzletrainer/.env > /dev/null"
+          ssh -i ~/.ssh/id_deploy evan@34.9.225.66 "printf 'NODE_ENV=production\nPORT=3000\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nSESSION_SECRET=${{ secrets.SESSION_SECRET }}\nDATABASE_URL=${{ secrets.DATABASE_URL }}\nTEST_AUTH_KEY=${{ secrets.TEST_AUTH_KEY }}\n' | sudo tee /opt/puzzletrainer/.env > /dev/null"
 
       - name: Deploy to VM
         run: |
@@ -60,3 +60,5 @@ jobs:
 
       - name: Run smoke tests
         run: cd e2e && npm test
+        env:
+          TEST_AUTH_KEY: ${{ secrets.TEST_AUTH_KEY }}
