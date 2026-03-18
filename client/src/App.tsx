@@ -54,9 +54,10 @@ function App() {
           Stats
         </button>
       </div>
-      {activeTab === "play" ? (
+      <div style={{ display: activeTab === "play" ? "block" : "none" }}>
         <PuzzleBoard onAuthError={clearUser} userRating={user.rating} onRatingUpdate={handleRatingUpdate} initialPuzzle={initialPuzzle} />
-      ) : (
+      </div>
+      {activeTab === "stats" && (
         <StatsPage key={Date.now()} onAuthError={clearUser} />
       )}
     </div>

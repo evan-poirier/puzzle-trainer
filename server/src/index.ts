@@ -141,15 +141,17 @@ app.post("/api/auth/test-login", async (req: Request, res: Response) => {
 // --- Puzzle routes ---
 
 async function getRandomPuzzle(targetRating: number | null) {
-  const ratingFilter = targetRating
-    ? { rating: { gte: targetRating - 250, lte: targetRating + 250 } }
-    : {};
+  if (targetRating) {
+    const rows = await prisma.$queryRaw<any[]>`
+      SELECT * FROM "Puzzle"
+      WHERE rating >= ${targetRating - 250} AND rating <= ${targetRating + 250}
+      ORDER BY RANDOM() LIMIT 1`;
+    return rows[0] ?? null;
+  }
 
-  const count = await prisma.puzzle.count({ where: ratingFilter });
-  if (count === 0) return null;
-
-  const skip = Math.floor(Math.random() * count);
-  return prisma.puzzle.findFirst({ where: ratingFilter, skip });
+  const rows = await prisma.$queryRaw<any[]>`
+    SELECT * FROM "Puzzle" ORDER BY RANDOM() LIMIT 1`;
+  return rows[0] ?? null;
 }
 
 app.get("/api/health", (_req, res) => {
