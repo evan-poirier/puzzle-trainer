@@ -41,7 +41,29 @@ export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate, i
   const initialPuzzleRef = useRef<unknown>(initialPuzzle);
   const prefetchedRef = useRef<Promise<Puzzle | null> | null>(null);
   const isDraggingRef = useRef(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const boardOrientation = game.turn() === "w" ? "white" : "black";
+
+  useEffect(() => {
+    if (status === "playing") {
+      setElapsedSeconds(0);
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds((s) => s + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [status]);
 
   function prefetchNext() {
     prefetchedRef.current = fetchPuzzle(userRating);
@@ -275,8 +297,11 @@ export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate, i
     );
   }
 
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
   return (
     <div className="puzzle-container">
+      {status === "playing" && <div className="puzzle-timer">{formatTime(elapsedSeconds)}</div>}
       <div className={status === "loading" ? "board-wrapper board-loading" : "board-wrapper"}>
         {status === "loading" && <div className="board-loading-overlay">Loading puzzle...</div>}
         <Chessboard
@@ -310,6 +335,12 @@ export default function PuzzleBoard({ onAuthError, userRating, onRatingUpdate, i
         {status === "correct" && <span className="status-correct">Correct!</span>}
         {status === "wrong" && <span className="status-wrong">Incorrect; try again</span>}
       </div>
+
+      {status === "playing" && (
+        <button className="no-tactic-btn" onClick={() => setStatus("wrong")}>
+          No winning tactic here
+        </button>
+      )}
 
       <div className="puzzle-controls">
         {(status === "correct" || status === "wrong") && (

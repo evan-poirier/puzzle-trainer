@@ -35,10 +35,6 @@ function App() {
 
   return (
     <div className="app">
-      <div className="user-bar">
-        <span>Logged in as <strong>{user.name}</strong> &middot; Elo: {user.rating}</span>
-        <button onClick={logout}>Log out</button>
-      </div>
       <h1>Tactic Monster</h1>
       <div className="tab-bar">
         <button
@@ -60,6 +56,10 @@ function App() {
       {activeTab === "stats" && (
         <StatsPage key={Date.now()} onAuthError={clearUser} />
       )}
+      <div className="user-bar">
+        <span>Logged in as <strong>{user.name}</strong> &middot; Elo: {user.rating}</span>
+        <button onClick={logout}>Log out</button>
+      </div>
     </div>
   )
 }
